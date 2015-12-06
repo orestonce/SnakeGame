@@ -14,6 +14,7 @@ public :
 protected:
     Subject() = default;
     virtual ~Subject() = default;
+    // 供子类在发生改变后主动通知观察者
     void notifyObservers() ;
 private:
     std::set<Observer *> m_observers;

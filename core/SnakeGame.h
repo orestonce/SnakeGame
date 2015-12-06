@@ -7,6 +7,7 @@
 
 namespace restonce {
 
+// 游戏内核是一个被界面观察的主题
 class SnakeGame
         : public Subject
 {
@@ -18,7 +19,7 @@ public:
     SnakeGame(int maxX, int maxY, std::size_t destScore);
     void start();
     void stop();
-    void turn(Direction direction);
+    void setDirection(Direction direction);
     void timeout();
     // 用于GUI绘制
     Snake const& getSnake() const;

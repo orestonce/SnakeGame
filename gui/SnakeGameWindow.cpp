@@ -11,6 +11,7 @@ SnakeGameWindow::SnakeGameWindow(QWidget *parent) :
     ui(new Ui::SnakeGameWindow), m_game(MAX_X, MAX_Y, 25)
 {
     ui->setupUi(this);
+    // 观察游戏内核对象
     m_game.attachObserver (this);
     connect (&m_timer, SIGNAL(timeout()),
              this, SLOT(slot_timeout()));
@@ -23,6 +24,8 @@ SnakeGameWindow::~SnakeGameWindow()
 
 void SnakeGameWindow::onSubjectChanged ()
 {
+    // 内核发生改变后，更新界面元素。
+    // 由于蛇、食物、墙无法在此处更新，就需要立即重绘
     typedef restonce::SnakeGame::Status Status;
     QString gameStatus ;
     switch ( m_game.getStatus () )
@@ -56,63 +59,70 @@ void SnakeGameWindow::paintEvent (QPaintEvent *)
     QImage food(":/images/food.png");
     QImage head(":/images/head.png");
 
-    QPainter painter(this);
+    typedef restonce::Point Point;
 
+    // 画墙
     for(int x=-1; x<=MAX_X; ++x)
     {
-        painter.drawImage (getRect (x, -1), wall);
-        painter.drawImage (getRect (x, MAX_Y), wall);
+        drawImage (Point (x, -1), wall);
+        drawImage (Point (x, MAX_Y), wall);
     }
     for(int y=-1; y<=MAX_Y; ++y)
     {
-        painter.drawImage (getRect (-1,  y), wall);
-        painter.drawImage (getRect (MAX_X, y), wall);
+        drawImage (Point (-1,  y), wall);
+        drawImage (Point (MAX_X, y), wall);
     }
-
+    // 画蛇的身体
     for(restonce::Point const & p : m_game.getSnake ().getBodys () )
     {
-        painter.drawImage (getRect (p.getX (), p.getY ()), body);
+        drawImage (p, body);
     }
-
+    // 画蛇头和食物
     if ( restonce::SnakeGame::Status::Undo != m_game.getStatus () ) {
         restonce::Point p = m_game.getFood ();
-        painter.drawImage (getRect (p.getX (), p.getY ()), food);
+        drawImage (p, food);
         p = m_game.getSnake ().getBodys ().front ();
-        painter.drawImage (getRect (p.getX (), p.getY ()), head);
+        drawImage (p, head);
     }
 }
 
 void SnakeGameWindow::keyPressEvent (QKeyEvent *e)
 {
     using restonce::SnakeGame;
-
+    // 将按键信息转化成对内核对象的控制信息
     switch (e->key ()) {
     case Qt::Key_Up:
-        m_game.turn (SnakeGame::Direction::Up);
+        m_game.setDirection (SnakeGame::Direction::Up);
         break;
     case Qt::Key_Down:
-        m_game.turn (SnakeGame::Direction::Down);
+        m_game.setDirection (SnakeGame::Direction::Down);
         break;
     case Qt::Key_Left:
-        m_game.turn (SnakeGame::Direction::Left);
+        m_game.setDirection (SnakeGame::Direction::Left);
         break;
     case Qt::Key_Right:
-        m_game.turn (SnakeGame::Direction::Right);
+        m_game.setDirection (SnakeGame::Direction::Right);
         break;
     default:
         break;
     }
 }
 
-QRect SnakeGameWindow::getRect (int x, int y)
+QRect SnakeGameWindow::getRect (restonce::Point const& p)
 {
     QPoint topLeft(60, 60);
     int boxSize = 15;
 
-    topLeft.rx () += x * boxSize;
-    topLeft.ry () += y * boxSize;
+    topLeft.rx () += p.getX() * boxSize;
+    topLeft.ry () += p.getY() * boxSize;
 
     return QRect(topLeft.x (), topLeft.y (), boxSize, boxSize );
+}
+
+void SnakeGameWindow::drawImage (const restonce::Point& p,const QImage &image)
+{
+    QPainter painter(this);
+    painter.drawImage( getRect (p), image);
 }
 
 void SnakeGameWindow::on_action_startGame_triggered()
@@ -133,7 +143,9 @@ void SnakeGameWindow::on_action_stopGame_triggered()
 
 void SnakeGameWindow::slot_timeout ()
 {
+    // 将定时器信息转化成控制信息
     m_game.timeout ();
+    // 若游戏已停止运行，则弹出窗口显示玩家状态
     if ( m_game.getStatus () != restonce::SnakeGame::Status::Runing ) {
         m_timer.stop ();
         QString result ;

@@ -32,7 +32,8 @@ private slots:
     void on_action_stopGame_triggered();
     void slot_timeout();
 private:
-    QRect getRect(int x, int y);
+    QRect getRect(const restonce::Point &p);
+    void drawImage(const restonce::Point &p, const QImage &image);
 private:
     Ui::SnakeGameWindow *ui;
     restonce::SnakeGame m_game;

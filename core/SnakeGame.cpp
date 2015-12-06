@@ -14,10 +14,13 @@ SnakeGame::SnakeGame(int maxX, int maxY, std::size_t destScore)
 
 void SnakeGame::start ()
 {
+    // 启动游戏，需要保证游戏没有运行
     if ( m_status != Status::Runing ) {
+        // 更新游戏状态、蛇状态，产生食物
         m_status = Status::Runing;
         m_snake.start();
         randomFood();
+        // 通知观察者，自身已经改变
         notifyObservers ();
     }
 }
@@ -31,7 +34,7 @@ void SnakeGame::stop ()
     }
 }
 
-void SnakeGame::turn (Direction direction)
+void SnakeGame::setDirection (Direction direction)
 {
     if ( m_snake.isAlive() ) {
         if ( m_snake.setDirection (direction) ) {
@@ -42,22 +45,34 @@ void SnakeGame::turn (Direction direction)
 
 void SnakeGame::timeout ()
 {
-    if ( m_status == Status::Runing && !isWiner () ) {
-        if ( m_food == m_snake.headFront () ) {
-            m_snake.increaseLength ();
-            if ( !isWiner () ) {
-                randomFood ();
-            }
-        }
+    if ( m_status != Status::Runing) {
+        return ;
+    }
+    // 2015-12-06 : 删除多于的验证是否为胜利者的操作
+    // 原因：每次在之后都会验证并更新胜利者状态
+    //         && !isWiner ()
+    if ( m_food == m_snake.headFront () ) {
+        m_snake.increaseLength ();
         m_snake.goAhead ();
-        m_snake.updateDie(m_maxX, m_maxY);
-
-        if ( !m_snake.isAlive () || isWiner ()) {
+        if ( !isWiner () ) { // here
+            randomFood ();
+            m_snake.updateDie(m_maxX, m_maxY);
+            if ( !m_snake.isAlive () ) { // 蛇死了，你输了
+                m_status = Status::GameOver;
+            }
+        } else {
+            // 你已经赢了
             m_status = Status::GameOver;
         }
-
-        notifyObservers ();
+    } else {
+        m_snake.updateDie(m_maxX, m_maxY);
+        if ( !m_snake.isAlive () ) { // 蛇死了，你输了
+            m_status = Status::GameOver;
+        } else {
+            m_snake.goAhead ();
+        }
     }
+    notifyObservers ();
 }
 
 Snake const& SnakeGame::getSnake() const
