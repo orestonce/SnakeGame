@@ -21,8 +21,8 @@ class SnakeGameWindow
 public:
     explicit SnakeGameWindow(QWidget *parent = 0);
     ~SnakeGameWindow();
-    virtual void onSubjectChanged() override final;
 protected:
+    virtual void onSubjectChanged() override final;
     virtual void paintEvent (QPaintEvent *) override;
     void keyPressEvent(QKeyEvent *);
 
